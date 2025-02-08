@@ -10,13 +10,15 @@ import (
 	"time"
 
 	"github.com/mo-mohamed/txparser/api"
+	"github.com/mo-mohamed/txparser/blockchain"
 	"github.com/mo-mohamed/txparser/parser"
 	store "github.com/mo-mohamed/txparser/storage"
 )
 
 func main() {
 	store := store.NewMemoryStore()
-	p := parser.NewTxParser("https://ethereum-rpc.publicnode.com", store)
+	blockchain := blockchain.NewBlockchain("https://ethereum-rpc.publicnode.com")
+	p := parser.NewTxParser(store, blockchain)
 
 	ctx, cancel := context.WithCancel(context.Background())
 

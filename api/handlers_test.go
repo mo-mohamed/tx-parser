@@ -9,18 +9,22 @@ import (
 
 	"github.com/mo-mohamed/txparser/api"
 	"github.com/mo-mohamed/txparser/mock"
+	"github.com/mo-mohamed/txparser/parser"
 	store "github.com/mo-mohamed/txparser/storage"
 )
 
 func TestCurrentBlockHandler(t *testing.T) {
 	store := store.NewMemoryStore()
 	store.SetCurrentBlock(100)
-	mockParser := mock.NewMockParser(store)
+	blockchain := &mock.BlockchainMock{
+		LatestNetworkBlockFunc: func() int { return 100 },
+	}
+	parser := parser.NewTxParser(store, blockchain)
 
 	req := httptest.NewRequest("GET", "/currentBlock", nil)
 	w := httptest.NewRecorder()
 
-	handler := api.CurrentBlockHandler(mockParser)
+	handler := api.CurrentBlockHandler(parser)
 	handler.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusOK {
@@ -39,12 +43,15 @@ func TestCurrentBlockHandler(t *testing.T) {
 }
 func TestSubscribeHandler(t *testing.T) {
 	store := store.NewMemoryStore()
-	mockParser := mock.NewMockParser(store)
+	blockchain := &mock.BlockchainMock{
+		LatestNetworkBlockFunc: func() int { return 10 },
+	}
+	parser := parser.NewTxParser(store, blockchain)
 
 	req := httptest.NewRequest("GET", "/subscribe?address=0x123456789abcdef", nil)
 	w := httptest.NewRecorder()
 
-	handler := api.SubscribeHandler(mockParser)
+	handler := api.SubscribeHandler(parser)
 	handler.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusOK {
@@ -61,14 +68,18 @@ func TestTransactionsHandler(t *testing.T) {
 		{Hash: "0xabc", From: "0x123456789abcdef", To: "0x987654321", Value: "1000", BlockNumber: "100"},
 	}
 	storage := store.NewMemoryStore()
-	mockParser := mock.NewMockParser(storage)
-	mockParser.Subscribe("0x123456789abcdef")
+	blockchain := &mock.BlockchainMock{
+		LatestNetworkBlockFunc: func() int { return 10 },
+	}
+	parser := parser.NewTxParser(storage, blockchain)
+
+	parser.Subscribe("0x123456789abcdef")
 	storage.SaveTransactions(mockedTrans)
 
 	req := httptest.NewRequest("GET", "/transactions?address=0x123456789abcdef", nil)
 	w := httptest.NewRecorder()
 
-	handler := api.TransactionsHandler(mockParser)
+	handler := api.TransactionsHandler(parser)
 	handler.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusOK {

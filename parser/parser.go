@@ -7,16 +7,11 @@ through the Ethereum JSON-RPC interface.
 package parser
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
-	"strconv"
 	"time"
 
+	"github.com/mo-mohamed/txparser/blockchain"
 	store "github.com/mo-mohamed/txparser/storage"
 )
 
@@ -25,18 +20,18 @@ type TxParser struct {
 	// store is the storage holding transactions, subscribers and blocks data
 	store store.IStore
 
-	// jsonRPCEndpoint is the Ethereum url endpoint used by parser to fetch data
-	jsonRPCEndpoint string
+	// blockChain is a blockchain client for communicating with the blockchain network
+	blockChain blockchain.IBlockchain
 }
 
 // NewTxParser initializes a new TxParser.
-func NewTxParser(jsonRPCEndpoint string, store store.IStore) *TxParser {
+func NewTxParser(store store.IStore, blockchain blockchain.IBlockchain) *TxParser {
 	parser := &TxParser{
-		jsonRPCEndpoint: jsonRPCEndpoint,
-		store:           store,
+		store:      store,
+		blockChain: blockchain,
 	}
 	// Set the current block to the latest block on the network to start polling from this point
-	parser.store.SetCurrentBlock(parser.getLatestNetworkBlock())
+	parser.store.SetCurrentBlock(parser.blockChain.LatestNetworkBlock())
 	return parser
 }
 
@@ -64,10 +59,10 @@ func (p *TxParser) StartPolling(ctx context.Context) {
 			fmt.Println("Polling blocks stopped.")
 			return
 		default:
-			latestBlockOnNetwork := p.getLatestNetworkBlock()
+			latestBlockOnNetwork := p.blockChain.LatestNetworkBlock()
 
 			for block := p.store.CurrentBlock() + 1; block <= latestBlockOnNetwork; block++ {
-				p.parseNewBlock(block)
+				p.processBlock(block)
 			}
 			p.store.SetCurrentBlock(latestBlockOnNetwork)
 
@@ -77,58 +72,12 @@ func (p *TxParser) StartPolling(ctx context.Context) {
 	}
 }
 
-// parseNewBlock helper fetches and extractstransactions from a block.
-func (p *TxParser) parseNewBlock(blockNumber int) {
+// processBlock helper fetches and extractstransactions from a block.
+func (p *TxParser) processBlock(blockNumber int) {
 	fmt.Println("Processing Block Number:", blockNumber)
-	response, _ := p.jsonRPCRequest("eth_getBlockByNumber", []interface{}{fmt.Sprintf("0x%x", blockNumber), true})
 
-	var blockData struct {
-		Result struct {
-			Transactions []store.Transaction `json:"transactions"`
-		} `json:"result"`
-	}
-	json.Unmarshal(response, &blockData)
-	p.store.SaveTransactions(blockData.Result.Transactions)
+	transactions := p.blockChain.ParseBlock(blockNumber)
+	p.store.SaveTransactions(transactions)
 
 	fmt.Println("Processing Block Completed:", blockNumber)
-}
-
-// jsonRPCRequest sends a JSON-RPC request to the Ethereum node.
-func (p *TxParser) jsonRPCRequest(method string, params []interface{}) ([]byte, error) {
-	requestBody, _ := json.Marshal(map[string]interface{}{
-		"jsonrpc": "2.0",
-		"method":  method,
-		"params":  params,
-		"id":      p.randomID(),
-	})
-
-	resp, err := http.Post(p.jsonRPCEndpoint, "application/json", bytes.NewReader(requestBody))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return io.ReadAll(resp.Body)
-}
-
-// getLatestNetworkBlock returns thge latest block on the network
-func (p *TxParser) getLatestNetworkBlock() int {
-	response, err := p.jsonRPCRequest("eth_blockNumber", []interface{}{})
-	if err != nil {
-		fmt.Println("Error fetching block number:", err)
-		return 0
-	}
-
-	var result struct {
-		Result string `json:"result"`
-	}
-	json.Unmarshal(response, &result)
-	var latestBlock int
-	fmt.Sscanf(result.Result, "0x%x", &latestBlock)
-	return latestBlock
-}
-
-// randomID generates random Identifier
-func (p *TxParser) randomID() string {
-	return strconv.Itoa(int(rand.Uint32()))
 }
