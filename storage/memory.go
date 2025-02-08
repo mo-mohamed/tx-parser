@@ -7,8 +7,10 @@ import (
 type MemoryStore struct {
 	// currentBlock stores the recent block that has been fetched.
 	currentBlock int
-	// subscribedAddr is a map where keys are Ethereum addresses, and values indicate
-	// whether the address is subscribed for transaction monitoring.
+	/*
+		subscribedAddr is a map where keys are Ethereum addresses, and values indicate
+		whether the address is subscribed for transaction monitoring.
+	*/
 	subscribedAddr map[string]bool
 	/*
 		transactions is a map that holds lists of transactions, indexed by Ethereum address.
@@ -26,6 +28,7 @@ func NewMemoryStore() *MemoryStore {
 	}
 }
 
+// Transactions fetches transactions records for a given address
 func (m *MemoryStore) Transactions(address string) []Transaction {
 	m.mu.Lock()
 	defer m.mu.Unlock()
