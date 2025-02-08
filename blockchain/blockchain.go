@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -42,7 +43,7 @@ func (b *Blockchain) ParseBlock(block int) []store.Transaction {
 func (b *Blockchain) LatestNetworkBlock() int {
 	response, err := b.jsonRPCRequest("eth_blockNumber", []interface{}{})
 	if err != nil {
-		fmt.Println("Error fetching block number:", err)
+		log.Println("Error fetching block number:", err)
 		return 0
 	}
 

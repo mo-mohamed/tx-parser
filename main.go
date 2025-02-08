@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,7 +26,7 @@ func main() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 		<-sigChan
-		fmt.Println("Shutting down...")
+		log.Println("Shutting down...")
 		cancel()
 	}()
 
@@ -39,24 +39,24 @@ func main() {
 	}
 
 	go func() {
-		fmt.Println("Starting HTTP server on :8080")
+		log.Println("Starting HTTP server on :8080")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Printf("HTTP server error: %v\n", err)
+			log.Printf("HTTP server error: %v\n", err)
 			cancel()
 		}
 	}()
 
 	<-ctx.Done()
-	fmt.Println("Context canceled, shutting down server...")
+	log.Println("Context canceled, shutting down server...")
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		fmt.Printf("HTTP server shutdown error: %v\n", err)
+		log.Printf("HTTP server shutdown error: %v\n", err)
 	} else {
-		fmt.Println("HTTP server stopped.")
+		log.Println("HTTP server stopped.")
 	}
 
-	fmt.Println("Server stopped.")
+	log.Println("Server stopped.")
 }

@@ -8,7 +8,7 @@ package parser
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/mo-mohamed/txparser/blockchain"
@@ -52,11 +52,11 @@ func (p *TxParser) GetTransactions(address string) []store.Transaction {
 
 // StartPolling starts fetching new blocks, alternatively "eth_subscribe" can be used for new blocks.
 func (p *TxParser) StartPolling(ctx context.Context) {
-	fmt.Println("Starting Polling Blocks")
+	log.Println("Starting Polling Blocks")
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("Polling blocks stopped.")
+			log.Println("Polling blocks stopped.")
 			return
 		default:
 			latestBlockOnNetwork := p.blockChain.LatestNetworkBlock()
@@ -74,10 +74,10 @@ func (p *TxParser) StartPolling(ctx context.Context) {
 
 // processBlock helper fetches and extractstransactions from a block.
 func (p *TxParser) processBlock(blockNumber int) {
-	fmt.Println("Processing Block Number:", blockNumber)
+	log.Println("Processing Block Number:", blockNumber)
 
 	transactions := p.blockChain.ParseBlock(blockNumber)
 	p.store.SaveTransactions(transactions)
 
-	fmt.Println("Processing Block Completed:", blockNumber)
+	log.Println("Processing Block Completed:", blockNumber)
 }
