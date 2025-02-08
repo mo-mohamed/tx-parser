@@ -71,7 +71,7 @@ func (p *TxParser) StartPolling(ctx context.Context) {
 			}
 			p.store.SetCurrentBlock(latestBlockOnNetwork)
 
-			// On Etherium networik, there a new block being added every 12 seconds
+			// On Etherium network, there is a new block added every 12 seconds
 			time.Sleep(5 * time.Second)
 		}
 	}
