@@ -5,11 +5,11 @@ import (
 )
 
 type BlockchainMock struct {
-	ParseBlockFunc         func(block int) []store.Transaction
+	ParseBlockFunc         func(block int) ([]store.Transaction, error)
 	LatestNetworkBlockFunc func() int
 }
 
-func (b *BlockchainMock) ParseBlock(block int) []store.Transaction {
+func (b *BlockchainMock) ParseBlock(block int) ([]store.Transaction, error) {
 	return b.ParseBlockFunc(block)
 }
 

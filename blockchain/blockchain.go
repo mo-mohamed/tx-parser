@@ -32,11 +32,15 @@ func NewBlockchain(endpoint string) *Blockchain {
 }
 
 // ParseBlock returns the transactions within a block
-func (b *Blockchain) ParseBlock(block int) []store.Transaction {
+func (b *Blockchain) ParseBlock(block int) ([]store.Transaction, error) {
 	var blockData blockData
-	response, _ := b.jsonRPCRequest("eth_getBlockByNumber", []interface{}{fmt.Sprintf("0x%x", block), true})
+	response, err := b.jsonRPCRequest("eth_getBlockByNumber", []interface{}{fmt.Sprintf("0x%x", block), true})
+	if err != nil {
+		log.Println("Error fetching block number:", err)
+		return nil, fmt.Errorf("error fetching block number: %s", err.Error())
+	}
 	json.Unmarshal(response, &blockData)
-	return blockData.Result.Transactions
+	return blockData.Result.Transactions, nil
 }
 
 // LatestNetworkBlock returns the latest block on the network

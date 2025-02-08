@@ -76,7 +76,10 @@ func (p *TxParser) StartPolling(ctx context.Context) {
 func (p *TxParser) processBlock(blockNumber int) {
 	log.Println("Processing Block Number:", blockNumber)
 
-	transactions := p.blockChain.ParseBlock(blockNumber)
+	transactions, err := p.blockChain.ParseBlock(blockNumber)
+	if err != nil {
+		log.Println(err.Error())
+	}
 	p.store.SaveTransactions(transactions)
 
 	log.Println("Processing Block Completed:", blockNumber)

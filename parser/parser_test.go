@@ -61,10 +61,10 @@ func TestStartPolling(t *testing.T) {
 	storage := store.NewMemoryStore()
 	mockBlockchain := &mock.BlockchainMock{
 		LatestNetworkBlockFunc: func() int { return 100 },
-		ParseBlockFunc: func(block int) []store.Transaction {
+		ParseBlockFunc: func(block int) ([]store.Transaction, error) {
 			return []store.Transaction{
 				{Hash: "0x" + strconv.Itoa(block), From: "0xabc", To: "0xdef", Value: "500", BlockNumber: strconv.Itoa(block)},
-			}
+			}, nil
 		},
 	}
 	parser := parser.NewTxParser(storage, mockBlockchain)
