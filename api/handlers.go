@@ -85,7 +85,7 @@ func TransactionsHandler(p parser.Parser) http.HandlerFunc {
 // Router sets up the HTTP routes and returns an http.Handler.
 func Router(p parser.Parser) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/currentBlock", CurrentBlockHandler(p))
+	mux.HandleFunc("/current-block", CurrentBlockHandler(p))
 	mux.HandleFunc("/subscribe", SubscribeHandler(p))
 	mux.HandleFunc("/transactions", TransactionsHandler(p))
 	return mux
