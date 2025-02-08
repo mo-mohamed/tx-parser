@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mo-mohamed/txparser/api"
 	"github.com/mo-mohamed/txparser/mock"
 	store "github.com/mo-mohamed/txparser/storage"
 )
@@ -19,11 +20,7 @@ func TestCurrentBlockHandler(t *testing.T) {
 	req := httptest.NewRequest("GET", "/currentBlock", nil)
 	w := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		block := mockParser.GetCurrentBlock()
-		json.NewEncoder(w).Encode(map[string]int{"currentBlock": block})
-	})
-
+	handler := api.CurrentBlockHandler(mockParser)
 	handler.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusOK {
@@ -40,7 +37,6 @@ func TestCurrentBlockHandler(t *testing.T) {
 		t.Errorf("Handler returned wrong block number: got %v want %v", response["currentBlock"], 100)
 	}
 }
-
 func TestSubscribeHandler(t *testing.T) {
 	store := store.NewMemoryStore()
 	mockParser := mock.NewMockParser(store)
@@ -48,21 +44,7 @@ func TestSubscribeHandler(t *testing.T) {
 	req := httptest.NewRequest("GET", "/subscribe?address=0x123456789abcdef", nil)
 	w := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		address := r.URL.Query().Get("address")
-		if address == "" {
-			http.Error(w, "Address is required", http.StatusBadRequest)
-			return
-		}
-		if mockParser.Subscribe(address) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Subscribed successfully"))
-		} else {
-			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte("Address already subscribed"))
-		}
-	})
-
+	handler := api.SubscribeHandler(mockParser)
 	handler.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusOK {
@@ -86,16 +68,7 @@ func TestTransactionsHandler(t *testing.T) {
 	req := httptest.NewRequest("GET", "/transactions?address=0x123456789abcdef", nil)
 	w := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		address := r.URL.Query().Get("address")
-		if address == "" {
-			http.Error(w, "Address is required", http.StatusBadRequest)
-			return
-		}
-		transactions := mockParser.GetTransactions(address)
-		json.NewEncoder(w).Encode(transactions)
-	})
-
+	handler := api.TransactionsHandler(mockParser)
 	handler.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusOK {

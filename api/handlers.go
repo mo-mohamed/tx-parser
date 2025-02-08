@@ -31,20 +31,21 @@ import (
 	"github.com/mo-mohamed/txparser/parser"
 )
 
-// Router sets up the HTTP routes and returns an http.Handler.
-func Router(p parser.Parser) http.Handler {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/currentBlock", func(w http.ResponseWriter, r *http.Request) {
+// CurrentBlockHandler handles the /currentBlock endpoint.
+func CurrentBlockHandler(p parser.Parser) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		block := p.GetCurrentBlock()
 		json.NewEncoder(w).Encode(map[string]int{"currentBlock": block})
-	})
+	}
+}
 
-	mux.HandleFunc("/subscribe", func(w http.ResponseWriter, r *http.Request) {
+// SubscribeHandler handles the /subscribe endpoint.
+func SubscribeHandler(p parser.Parser) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
@@ -61,9 +62,12 @@ func Router(p parser.Parser) http.Handler {
 			w.WriteHeader(http.StatusConflict)
 			w.Write([]byte("Address already subscribed"))
 		}
-	})
+	}
+}
 
-	mux.HandleFunc("/transactions", func(w http.ResponseWriter, r *http.Request) {
+// TransactionsHandler handles the /transactions endpoint.
+func TransactionsHandler(p parser.Parser) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
@@ -75,7 +79,14 @@ func Router(p parser.Parser) http.Handler {
 		}
 		transactions := p.GetTransactions(address)
 		json.NewEncoder(w).Encode(transactions)
-	})
+	}
+}
 
+// Router sets up the HTTP routes and returns an http.Handler.
+func Router(p parser.Parser) http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/currentBlock", CurrentBlockHandler(p))
+	mux.HandleFunc("/subscribe", SubscribeHandler(p))
+	mux.HandleFunc("/transactions", TransactionsHandler(p))
 	return mux
 }
