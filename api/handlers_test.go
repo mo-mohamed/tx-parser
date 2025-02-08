@@ -2,7 +2,6 @@ package api_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -91,8 +90,6 @@ func TestTransactionsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not decode response: %v", err)
 	}
-
-	fmt.Println("LENGTH is:", len(transactions))
 
 	if len(transactions) != 1 || transactions[0].Hash != "0xabc" {
 		t.Errorf("Handler returned wrong transactions: got %v", transactions)

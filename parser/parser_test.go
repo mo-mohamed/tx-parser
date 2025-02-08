@@ -1,7 +1,10 @@
 package parser_test
 
 import (
+	"context"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/mo-mohamed/txparser/mock"
 	"github.com/mo-mohamed/txparser/parser"
@@ -51,5 +54,45 @@ func TestGetTransactions(t *testing.T) {
 	transactions := parser.GetTransactions(address)
 	if len(transactions) != 0 {
 		t.Errorf("Expected no transactions for a new subscription, got %d", len(transactions))
+	}
+}
+
+func TestStartPolling(t *testing.T) {
+	storage := store.NewMemoryStore()
+	mockBlockchain := &mock.BlockchainMock{
+		LatestNetworkBlockFunc: func() int { return 100 },
+		ParseBlockFunc: func(block int) []store.Transaction {
+			return []store.Transaction{
+				{Hash: "0x" + strconv.Itoa(block), From: "0xabc", To: "0xdef", Value: "500", BlockNumber: strconv.Itoa(block)},
+			}
+		},
+	}
+	parser := parser.NewTxParser(storage, mockBlockchain)
+	mockBlockchain.LatestNetworkBlockFunc = func() int { return 105 }
+	parser.Subscribe("0xabc")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	go parser.StartPolling(ctx)
+
+	<-ctx.Done()
+
+	if storage.CurrentBlock() != 105 {
+		t.Errorf("Expected current block to be updated to 105, got %d", storage.CurrentBlock())
+	}
+
+	expectedProcessedBlocks := []int{101, 102, 103, 104, 105}
+	for _, block := range expectedProcessedBlocks {
+		found := false
+		for _, tx := range storage.Transactions("0xabc") {
+			if tx.BlockNumber == strconv.Itoa(block) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected block %d to be processed, but it was not", block)
+		}
 	}
 }

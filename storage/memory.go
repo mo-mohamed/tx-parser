@@ -49,7 +49,6 @@ func (m *MemoryStore) SaveTransactions(transactions []Transaction) {
 			m.transactions[tx.To] = append(m.transactions[tx.To], tx)
 		}
 	}
-	// fmt.Println(m.transactions)
 }
 
 // Subscribe adds an address to the list of subscribers.
