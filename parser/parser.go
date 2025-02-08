@@ -91,7 +91,6 @@ func (p *TxParser) parseNewBlock(blockNumber int) {
 	p.store.SaveTransactions(blockData.Result.Transactions)
 
 	fmt.Println("Processing Block Completed:", blockNumber)
-	// fmt.Printf("CURRENT TRANSACTIONS: %+v\n", p.store.Transactions())
 }
 
 // jsonRPCRequest sends a JSON-RPC request to the Ethereum node.
