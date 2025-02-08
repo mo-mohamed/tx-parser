@@ -12,7 +12,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -97,8 +99,6 @@ func (p *TxParser) StartPolling(ctx context.Context) {
 		default:
 			latestBlockOnNetwork := p.getLatestBlock()
 
-			// fmt.Printf("CURRENT BLOCK: %d & LATEST ETH BLOCK IS: %d\n", p.GetCurrentBlock(), latestBlockOnNetwork)
-
 			for block := p.GetCurrentBlock() + 1; block <= latestBlockOnNetwork; block++ {
 				p.parseNewBlock(block)
 			}
@@ -121,8 +121,9 @@ func (p *TxParser) parseNewBlock(blockNumber int) {
 		} `json:"result"`
 	}
 	json.Unmarshal(response, &blockData)
-	p.store(blockData.Result.Transactions)
+	p.storeTransactions(blockData.Result.Transactions)
 
+	fmt.Println("Processing Block Completed:", blockNumber)
 	// fmt.Printf("CURRENT TRANSACTIONS: %+v\n", p.transactions)
 }
 
@@ -132,7 +133,7 @@ func (p *TxParser) jsonRPCRequest(method string, params []interface{}) ([]byte, 
 		"jsonrpc": "2.0",
 		"method":  method,
 		"params":  params,
-		"id":      1,
+		"id":      p.randomID(),
 	})
 
 	resp, err := http.Post(p.jsonRPCEndpoint, "application/json", bytes.NewReader(requestBody))
@@ -164,8 +165,8 @@ func (p *TxParser) getLatestBlock() int {
 	return latestBlock
 }
 
-// store stores transaction in the transactions store
-func (p *TxParser) store(transactions []Transaction) {
+// storeTransactions stores transaction in the transactions store
+func (p *TxParser) storeTransactions(transactions []Transaction) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -175,4 +176,9 @@ func (p *TxParser) store(transactions []Transaction) {
 			p.transactions[tx.To] = append(p.transactions[tx.To], tx)
 		}
 	}
+}
+
+// randomID generates random Identifier
+func (p *TxParser) randomID() string {
+	return strconv.Itoa(int(rand.Uint32()))
 }
