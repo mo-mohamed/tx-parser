@@ -6,31 +6,21 @@ import (
 
 // MockParser is a mock implementation of the Parser interface.
 type MockParser struct {
-	CurrentBlock   int
-	SubscribedAddr map[string]bool
-	Transactions   map[string][]store.Transaction
+	store store.IStore
 }
 
-func NewMockParser() *MockParser {
-	return &MockParser{
-		CurrentBlock:   100,
-		SubscribedAddr: make(map[string]bool),
-		Transactions:   make(map[string][]store.Transaction),
-	}
+func NewMockParser(store store.IStore) *MockParser {
+	return &MockParser{store: store}
 }
 
 func (m *MockParser) GetCurrentBlock() int {
-	return m.CurrentBlock
+	return m.store.CurrentBlock()
 }
 
 func (m *MockParser) Subscribe(address string) bool {
-	if _, exists := m.SubscribedAddr[address]; exists {
-		return false
-	}
-	m.SubscribedAddr[address] = true
-	return true
+	return m.store.Subscribe(address)
 }
 
 func (m *MockParser) GetTransactions(address string) []store.Transaction {
-	return m.Transactions[address]
+	return m.store.Transactions(address)
 }

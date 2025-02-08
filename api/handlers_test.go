@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,8 +12,9 @@ import (
 )
 
 func TestCurrentBlockHandler(t *testing.T) {
-	mockParser := mock.NewMockParser()
-	mockParser.CurrentBlock = 100
+	store := store.NewMemoryStore()
+	store.SetCurrentBlock(100)
+	mockParser := mock.NewMockParser(store)
 
 	req := httptest.NewRequest("GET", "/currentBlock", nil)
 	w := httptest.NewRecorder()
@@ -40,7 +42,8 @@ func TestCurrentBlockHandler(t *testing.T) {
 }
 
 func TestSubscribeHandler(t *testing.T) {
-	mockParser := mock.NewMockParser()
+	store := store.NewMemoryStore()
+	mockParser := mock.NewMockParser(store)
 
 	req := httptest.NewRequest("GET", "/subscribe?address=0x123456789abcdef", nil)
 	w := httptest.NewRecorder()
@@ -72,10 +75,13 @@ func TestSubscribeHandler(t *testing.T) {
 }
 
 func TestTransactionsHandler(t *testing.T) {
-	mockParser := mock.NewMockParser()
-	mockParser.Transactions["0x123456789abcdef"] = []store.Transaction{
+	mockedTrans := []store.Transaction{
 		{Hash: "0xabc", From: "0x123456789abcdef", To: "0x987654321", Value: "1000", BlockNumber: "100"},
 	}
+	storage := store.NewMemoryStore()
+	mockParser := mock.NewMockParser(storage)
+	mockParser.Subscribe("0x123456789abcdef")
+	storage.SaveTransactions(mockedTrans)
 
 	req := httptest.NewRequest("GET", "/transactions?address=0x123456789abcdef", nil)
 	w := httptest.NewRecorder()
@@ -101,6 +107,8 @@ func TestTransactionsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not decode response: %v", err)
 	}
+
+	fmt.Println("LENGTH is:", len(transactions))
 
 	if len(transactions) != 1 || transactions[0].Hash != "0xabc" {
 		t.Errorf("Handler returned wrong transactions: got %v", transactions)

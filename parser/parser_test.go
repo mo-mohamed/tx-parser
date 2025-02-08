@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	"github.com/mo-mohamed/txparser/mock"
+	store "github.com/mo-mohamed/txparser/storage"
 )
 
 func TestGetCurrentBlock(t *testing.T) {
-	mockParser := mock.NewMockParser()
-	mockParser.CurrentBlock = 123456
+	store := store.NewMemoryStore()
+	store.SetCurrentBlock(123456)
+	mockParser := mock.NewMockParser(store)
 
 	block := mockParser.GetCurrentBlock()
 	if block != 123456 {
@@ -17,7 +19,8 @@ func TestGetCurrentBlock(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	mockParser := mock.NewMockParser()
+	store := store.NewMemoryStore()
+	mockParser := mock.NewMockParser(store)
 	address := "0x123456789abcdef"
 
 	if !mockParser.Subscribe(address) {
@@ -30,7 +33,8 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestGetTransactions(t *testing.T) {
-	mockParser := mock.NewMockParser()
+	store := store.NewMemoryStore()
+	mockParser := mock.NewMockParser(store)
 	address := "0x123456789abcdef"
 
 	transactions := mockParser.GetTransactions(address)
