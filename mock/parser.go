@@ -1,21 +1,21 @@
 package mock
 
 import (
-	"github.com/mo-mohamed/txparser/parser"
+	store "github.com/mo-mohamed/txparser/storage"
 )
 
 // MockParser is a mock implementation of the Parser interface.
 type MockParser struct {
 	CurrentBlock   int
 	SubscribedAddr map[string]bool
-	Transactions   map[string][]parser.Transaction
+	Transactions   map[string][]store.Transaction
 }
 
 func NewMockParser() *MockParser {
 	return &MockParser{
 		CurrentBlock:   100,
 		SubscribedAddr: make(map[string]bool),
-		Transactions:   make(map[string][]parser.Transaction),
+		Transactions:   make(map[string][]store.Transaction),
 	}
 }
 
@@ -31,6 +31,6 @@ func (m *MockParser) Subscribe(address string) bool {
 	return true
 }
 
-func (m *MockParser) GetTransactions(address string) []parser.Transaction {
+func (m *MockParser) GetTransactions(address string) []store.Transaction {
 	return m.Transactions[address]
 }

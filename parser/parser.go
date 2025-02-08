@@ -15,77 +15,44 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
-)
 
-// Transaction represents a blockchain transaction.
-type Transaction struct {
-	// Hash is the unique identifier for this transaction.
-	Hash string `json:"hash"`
-	// From is the Ethereum address that initiated the transaction.
-	From string `json:"from"`
-	// To is the Ethereum address of the account that is the recipient of the transaction.
-	To string `json:"to"`
-	// Value is the transaction amount.
-	Value string `json:"value"`
-	// BlockNumber is the number of the transaction.
-	BlockNumber string `json:"blockNumber"`
-}
+	store "github.com/mo-mohamed/txparser/storage"
+)
 
 // TxParser implements the Parser interface.
 type TxParser struct {
-	// currentBlock stores the recent block that has been fetched.
-	currentBlock int
-	// subscribedAddr is a map where keys are Ethereum addresses, and values indicate
-	// whether the address is subscribed for transaction monitoring.
-	subscribedAddr map[string]bool
-	/*
-		transactions is a map that holds lists of transactions, indexed by Ethereum address.
-		Each key corresponds to an address, and the associated value is a slice of Transaction structs.
-	*/
-	transactions map[string][]Transaction
-	// mu is a mutex that ensures safe concurrent access to the TxParser's state.
-	mu sync.Mutex
+	// store is the storage holding transactions, subscribers and blocks data
+	store store.IStore
+
 	// jsonRPCEndpoint is the Ethereum url endpoint used by parser to fetch data
 	jsonRPCEndpoint string
 }
 
 // NewTxParser initializes a new TxParser.
-func NewTxParser(jsonRPCEndpoint string) *TxParser {
+func NewTxParser(jsonRPCEndpoint string, store store.IStore) *TxParser {
 	parser := &TxParser{
-		subscribedAddr:  make(map[string]bool),
-		transactions:    make(map[string][]Transaction),
 		jsonRPCEndpoint: jsonRPCEndpoint,
+		store:           store,
 	}
 	// Set the current block to the latest block on the network to start polling from this point
-	parser.currentBlock = parser.getLatestBlock()
+	parser.store.SetCurrentBlock(parser.getLatestNetworkBlock())
 	return parser
 }
 
 // GetCurrentBlock fetches the latest block number from the Ethereum network.
 func (p *TxParser) GetCurrentBlock() int {
-	return p.currentBlock
+	return p.store.CurrentBlock()
 }
 
 // Subscribe adds an address to the list of subscribers.
 func (p *TxParser) Subscribe(address string) bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if _, exists := p.subscribedAddr[address]; exists {
-		return false
-	}
-	p.subscribedAddr[address] = true
-	return true
+	return p.store.Subscribe(address)
 }
 
 // GetTransactions returns a list of transactions for a subscribed address.
-func (p *TxParser) GetTransactions(address string) []Transaction {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.transactions[address]
+func (p *TxParser) GetTransactions(address string) []store.Transaction {
+	return p.store.Transactions(address)
 }
 
 // StartPolling starts fetching new blocks, alternatively "eth_subscribe" can be used for new blocks.
@@ -97,12 +64,12 @@ func (p *TxParser) StartPolling(ctx context.Context) {
 			fmt.Println("Polling blocks stopped.")
 			return
 		default:
-			latestBlockOnNetwork := p.getLatestBlock()
+			latestBlockOnNetwork := p.getLatestNetworkBlock()
 
-			for block := p.GetCurrentBlock() + 1; block <= latestBlockOnNetwork; block++ {
+			for block := p.store.CurrentBlock() + 1; block <= latestBlockOnNetwork; block++ {
 				p.parseNewBlock(block)
 			}
-			p.currentBlock = latestBlockOnNetwork
+			p.store.SetCurrentBlock(latestBlockOnNetwork)
 
 			// On Etherium networik, there a new block being added every 12 seconds
 			time.Sleep(5 * time.Second)
@@ -117,14 +84,14 @@ func (p *TxParser) parseNewBlock(blockNumber int) {
 
 	var blockData struct {
 		Result struct {
-			Transactions []Transaction `json:"transactions"`
+			Transactions []store.Transaction `json:"transactions"`
 		} `json:"result"`
 	}
 	json.Unmarshal(response, &blockData)
-	p.storeTransactions(blockData.Result.Transactions)
+	p.store.SaveTransactions(blockData.Result.Transactions)
 
 	fmt.Println("Processing Block Completed:", blockNumber)
-	// fmt.Printf("CURRENT TRANSACTIONS: %+v\n", p.transactions)
+	// fmt.Printf("CURRENT TRANSACTIONS: %+v\n", p.store.Transactions())
 }
 
 // jsonRPCRequest sends a JSON-RPC request to the Ethereum node.
@@ -145,11 +112,8 @@ func (p *TxParser) jsonRPCRequest(method string, params []interface{}) ([]byte, 
 	return io.ReadAll(resp.Body)
 }
 
-// getLatestBlock returns thge latest block on the network
-func (p *TxParser) getLatestBlock() int {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
+// getLatestNetworkBlock returns thge latest block on the network
+func (p *TxParser) getLatestNetworkBlock() int {
 	response, err := p.jsonRPCRequest("eth_blockNumber", []interface{}{})
 	if err != nil {
 		fmt.Println("Error fetching block number:", err)
@@ -163,19 +127,6 @@ func (p *TxParser) getLatestBlock() int {
 	var latestBlock int
 	fmt.Sscanf(result.Result, "0x%x", &latestBlock)
 	return latestBlock
-}
-
-// storeTransactions stores transaction in the transactions store
-func (p *TxParser) storeTransactions(transactions []Transaction) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	for _, tx := range transactions {
-		if p.subscribedAddr[tx.From] || p.subscribedAddr[tx.To] {
-			p.transactions[tx.From] = append(p.transactions[tx.From], tx)
-			p.transactions[tx.To] = append(p.transactions[tx.To], tx)
-		}
-	}
 }
 
 // randomID generates random Identifier

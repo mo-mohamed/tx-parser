@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/mo-mohamed/txparser/mock"
-	"github.com/mo-mohamed/txparser/parser"
+	store "github.com/mo-mohamed/txparser/storage"
 )
 
 func TestCurrentBlockHandler(t *testing.T) {
@@ -73,7 +73,7 @@ func TestSubscribeHandler(t *testing.T) {
 
 func TestTransactionsHandler(t *testing.T) {
 	mockParser := mock.NewMockParser()
-	mockParser.Transactions["0x123456789abcdef"] = []parser.Transaction{
+	mockParser.Transactions["0x123456789abcdef"] = []store.Transaction{
 		{Hash: "0xabc", From: "0x123456789abcdef", To: "0x987654321", Value: "1000", BlockNumber: "100"},
 	}
 
@@ -96,7 +96,7 @@ func TestTransactionsHandler(t *testing.T) {
 		t.Errorf("Handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	var transactions []parser.Transaction
+	var transactions []store.Transaction
 	err := json.NewDecoder(w.Body).Decode(&transactions)
 	if err != nil {
 		t.Fatalf("Could not decode response: %v", err)

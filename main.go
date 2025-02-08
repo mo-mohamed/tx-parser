@@ -11,10 +11,12 @@ import (
 
 	"github.com/mo-mohamed/txparser/api"
 	"github.com/mo-mohamed/txparser/parser"
+	store "github.com/mo-mohamed/txparser/storage"
 )
 
 func main() {
-	p := parser.NewTxParser("https://ethereum-rpc.publicnode.com")
+	store := store.NewMemoryStore()
+	p := parser.NewTxParser("https://ethereum-rpc.publicnode.com", store)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
