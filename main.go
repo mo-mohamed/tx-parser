@@ -30,7 +30,7 @@ func main() {
 		cancel()
 	}()
 
-	// Start tyhe background polling worker
+	// Start the background polling worker
 	go p.StartPolling(ctx)
 
 	server := &http.Server{

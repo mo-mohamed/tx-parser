@@ -1,3 +1,6 @@
+/*
+Package blockchain provides functionality for communicating with the Etherium network.
+*/
 package blockchain
 
 import (
