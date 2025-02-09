@@ -21,6 +21,7 @@ type MemoryStore struct {
 	mu sync.Mutex
 }
 
+// NewMemoryStore initializes a new Memory store.
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
 		subscribedAddr: make(map[string]bool),

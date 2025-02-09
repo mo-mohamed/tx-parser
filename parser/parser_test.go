@@ -78,14 +78,14 @@ func TestStartPolling(t *testing.T) {
 
 	<-ctx.Done()
 
-	if storage.CurrentBlock() != 105 {
+	if parser.GetCurrentBlock() != 105 {
 		t.Errorf("Expected current block to be updated to 105, got %d", storage.CurrentBlock())
 	}
 
 	expectedProcessedBlocks := []int{101, 102, 103, 104, 105}
 	for _, block := range expectedProcessedBlocks {
 		found := false
-		for _, tx := range storage.Transactions("0xabc") {
+		for _, tx := range parser.GetTransactions("0xabc") {
 			if tx.BlockNumber == strconv.Itoa(block) {
 				found = true
 				break
